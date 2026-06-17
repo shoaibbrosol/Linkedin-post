@@ -29,6 +29,11 @@ Create your first user at `/register`.
 
 ## LinkedIn OAuth
 
+Enable these products in the LinkedIn developer app before connecting:
+
+- Sign In with LinkedIn using OpenID Connect
+- Share on LinkedIn
+
 Set these values in `.env`:
 
 ```env
@@ -38,7 +43,7 @@ LINKEDIN_SCOPES="openid profile email w_member_social"
 LINKEDIN_MAX_RETRIES=3
 ```
 
-Use this redirect URL in the LinkedIn developer app:
+Use this exact redirect URL in the LinkedIn developer app:
 
 ```text
 http://your-domain.test/linkedin/callback

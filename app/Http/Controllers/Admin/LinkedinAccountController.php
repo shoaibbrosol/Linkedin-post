@@ -52,9 +52,13 @@ class LinkedinAccountController extends Controller
     public function callback(Request $request, LinkedInService $linkedIn)
     {
         if ($request->filled('error')) {
-            $message = $request->input('error_description', $request->input('error', 'LinkedIn authorization was cancelled.'));
+            $message = html_entity_decode(
+                $request->input('error_description', $request->input('error', 'LinkedIn authorization was cancelled.')),
+                ENT_QUOTES | ENT_HTML5,
+                'UTF-8'
+            );
 
-            return redirect()->route('linkedin.account.edit')->with('status', 'LinkedIn connection failed: '.$message);
+            return redirect()->route('linkedin.account.edit')->with('error', 'LinkedIn connection failed: '.$message);
         }
 
         $request->validate([
@@ -65,14 +69,14 @@ class LinkedinAccountController extends Controller
         $expectedState = (string) $request->session()->pull('linkedin_oauth_state');
 
         if (! hash_equals($expectedState, $request->state)) {
-            return redirect()->route('linkedin.account.edit')->with('status', 'LinkedIn connection expired. Please try connecting again.');
+            return redirect()->route('linkedin.account.edit')->with('error', 'LinkedIn connection expired. Please try connecting again.');
         }
 
         try {
             $token = $linkedIn->exchangeCodeForToken($request->code);
             $profile = $linkedIn->fetchProfile($token['access_token']);
         } catch (RuntimeException $exception) {
-            return redirect()->route('linkedin.account.edit')->with('status', 'LinkedIn connection failed: '.$exception->getMessage());
+            return redirect()->route('linkedin.account.edit')->with('error', 'LinkedIn connection failed: '.$exception->getMessage());
         }
 
         $request->user()->linkedinAccounts()->updateOrCreate(
