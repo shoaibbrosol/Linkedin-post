@@ -51,6 +51,11 @@ class LinkedInService
         return $profile->json();
     }
 
+    public function usesOpenIdConnect(): bool
+    {
+        return in_array('openid', preg_split('/\s+/', trim((string) config('services.linkedin.scopes'))), true);
+    }
+
     public function publish(LinkedinPost $post): array
     {
         $account = $post->linkedinAccount;

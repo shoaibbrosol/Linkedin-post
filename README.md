@@ -39,9 +39,11 @@ Set these values in `.env`:
 ```env
 LINKEDIN_CLIENT_ID=
 LINKEDIN_CLIENT_SECRET=
-LINKEDIN_SCOPES="openid profile email w_member_social"
+LINKEDIN_SCOPES="w_member_social"
 LINKEDIN_MAX_RETRIES=3
 ```
+
+Use `LINKEDIN_SCOPES="openid profile email w_member_social"` only after the LinkedIn app has the OpenID Connect product approved. Without OpenID Connect, the app can connect the posting token but you must enter the LinkedIn User ID manually on the account page before publishing.
 
 Use this exact redirect URL in the LinkedIn developer app:
 

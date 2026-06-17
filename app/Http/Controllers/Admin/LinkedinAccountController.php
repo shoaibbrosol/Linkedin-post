@@ -74,24 +74,38 @@ class LinkedinAccountController extends Controller
 
         try {
             $token = $linkedIn->exchangeCodeForToken($request->code);
-            $profile = $linkedIn->fetchProfile($token['access_token']);
+            $profile = $linkedIn->usesOpenIdConnect()
+                ? $linkedIn->fetchProfile($token['access_token'])
+                : [];
         } catch (RuntimeException $exception) {
             return redirect()->route('linkedin.account.edit')->with('error', 'LinkedIn connection failed: '.$exception->getMessage());
         }
 
-        $request->user()->linkedinAccounts()->updateOrCreate(
-            ['linkedin_user_id' => $profile['sub'] ?? $profile['id'] ?? null],
-            [
-                'name' => $profile['name'] ?? trim(($profile['given_name'] ?? '').' '.($profile['family_name'] ?? '')),
-                'email' => $profile['email'] ?? null,
-                'access_token' => $token['access_token'],
-                'refresh_token' => $token['refresh_token'] ?? null,
-                'token_expires_at' => isset($token['expires_in']) ? now()->addSeconds((int) $token['expires_in']) : null,
-                'status' => 'active',
-            ]
-        );
+        $linkedinUserId = $profile['sub'] ?? $profile['id'] ?? null;
+        $latestAccountId = $request->user()->linkedinAccounts()->latest()->value('id');
+        $accountLookup = $linkedinUserId
+            ? ['linkedin_user_id' => $linkedinUserId]
+            : ($latestAccountId ? ['id' => $latestAccountId] : ['linkedin_user_id' => null]);
 
-        return redirect()->route('linkedin.account.edit')->with('status', 'LinkedIn account connected.');
+        $accountData = [
+            'access_token' => $token['access_token'],
+            'refresh_token' => $token['refresh_token'] ?? null,
+            'token_expires_at' => isset($token['expires_in']) ? now()->addSeconds((int) $token['expires_in']) : null,
+            'status' => 'active',
+        ];
+
+        if ($profile !== []) {
+            $accountData['name'] = $profile['name'] ?? trim(($profile['given_name'] ?? '').' '.($profile['family_name'] ?? ''));
+            $accountData['email'] = $profile['email'] ?? null;
+        }
+
+        $request->user()->linkedinAccounts()->updateOrCreate($accountLookup, $accountData);
+
+        $message = $linkedinUserId
+            ? 'LinkedIn account connected.'
+            : 'LinkedIn token connected. Add your LinkedIn User ID below before publishing.';
+
+        return redirect()->route('linkedin.account.edit')->with('status', $message);
     }
 
     public function disconnect(Request $request, LinkedinAccount $account)
