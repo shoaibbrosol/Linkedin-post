@@ -74,9 +74,14 @@ class LinkedinAccountController extends Controller
 
         try {
             $token = $linkedIn->exchangeCodeForToken($request->code);
-            $profile = $linkedIn->usesOpenIdConnect()
-                ? $linkedIn->fetchProfile($token['access_token'])
-                : [];
+            $profile = $linkedIn->profileFromIdToken($token['id_token'] ?? null);
+
+            if ($linkedIn->usesOpenIdConnect()) {
+                $profile = array_filter(array_merge(
+                    $profile,
+                    $linkedIn->fetchProfile($token['access_token'])
+                ), fn ($value) => $value !== null && $value !== '');
+            }
         } catch (RuntimeException $exception) {
             return redirect()->route('linkedin.account.edit')->with('error', 'LinkedIn connection failed: '.$exception->getMessage());
         }

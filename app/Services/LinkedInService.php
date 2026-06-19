@@ -51,6 +51,31 @@ class LinkedInService
         return $profile->json();
     }
 
+    public function profileFromIdToken(?string $idToken): array
+    {
+        if (blank($idToken)) {
+            return [];
+        }
+
+        $parts = explode('.', $idToken);
+
+        if (count($parts) < 2) {
+            return [];
+        }
+
+        $payload = strtr($parts[1], '-_', '+/');
+        $payload .= str_repeat('=', (4 - strlen($payload) % 4) % 4);
+        $decoded = base64_decode($payload, true);
+
+        if ($decoded === false) {
+            return [];
+        }
+
+        $profile = json_decode($decoded, true);
+
+        return is_array($profile) ? $profile : [];
+    }
+
     public function usesOpenIdConnect(): bool
     {
         return in_array('openid', preg_split('/\s+/', trim((string) config('services.linkedin.scopes'))), true);

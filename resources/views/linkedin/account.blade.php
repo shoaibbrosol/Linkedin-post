@@ -22,6 +22,9 @@
         <div>
             <label>LinkedIn User ID</label>
             <input name="linkedin_user_id" value="{{ old('linkedin_user_id', $account?->linkedin_user_id) }}">
+            @if (! $account?->linkedin_user_id)
+                <p class="muted">Auto-fill requires LinkedIn OpenID scopes. If your LinkedIn app only allows posting, enter this ID manually before publishing.</p>
+            @endif
         </div>
         <div>
             <label>Status</label>
