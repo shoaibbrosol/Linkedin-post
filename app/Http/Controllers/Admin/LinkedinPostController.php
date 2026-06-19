@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Jobs\PublishLinkedInPostJob;
+use App\Models\LinkedinAccount;
 use App\Models\LinkedinPost;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -164,6 +165,12 @@ class LinkedinPostController extends Controller
         abort_unless($post->user_id === $request->user()->id, 403);
         abort_unless($post->canRetry(), 409, 'This post cannot be retried.');
 
+        if (! $post->linkedinAccount?->linkedin_user_id) {
+            return redirect()
+                ->route('linkedin.account.edit')
+                ->with('error', 'Add the LinkedIn User ID before retrying this post.');
+        }
+
         $post->update([
             'status' => 'pending',
             'scheduled_at' => now(),
@@ -206,6 +213,19 @@ class LinkedinPostController extends Controller
 
             if ($duplicate) {
                 back()->withErrors(['scheduled_at' => 'You already have a pending post scheduled at this time.'])->throwResponse();
+            }
+
+            $accountReady = LinkedinAccount::query()
+                ->where('user_id', $request->user()->id)
+                ->whereKey($data['linkedin_account_id'])
+                ->whereNotNull('linkedin_user_id')
+                ->where('linkedin_user_id', '!=', '')
+                ->exists();
+
+            if (! $accountReady) {
+                back()->withErrors([
+                    'linkedin_account_id' => 'Add the LinkedIn User ID on the LinkedIn Account page before scheduling posts.',
+                ])->throwResponse();
             }
         } else {
             $data['scheduled_at'] = null;

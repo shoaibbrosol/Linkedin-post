@@ -11,7 +11,14 @@
     <p style="white-space:pre-wrap">{{ $post->content }}</p>
     @if ($post->media_path)<p><img src="{{ asset('storage/'.$post->media_path) }}" alt="" style="max-width:360px;width:100%;border-radius:8px"></p>@endif
     @if ($post->linkedin_post_id)<p>LinkedIn Post ID: <code>{{ $post->linkedin_post_id }}</code></p>@endif
-    @if ($post->error_message)<p class="errors alert">{{ $post->error_message }}</p>@endif
+    @if ($post->error_message)
+        <div class="errors alert">
+            {{ $post->error_message }}
+            @if (str_contains($post->error_message, 'LinkedIn user ID'))
+                <p><a class="btn" href="{{ route('linkedin.account.edit') }}">Add LinkedIn User ID</a></p>
+            @endif
+        </div>
+    @endif
     <p>
         @if ($post->canBeEdited())<a class="btn" href="{{ route('posts.edit', $post) }}">Edit</a>@endif
         @if ($post->canRetry())<form method="post" action="{{ route('posts.retry', $post) }}" style="display:inline">@csrf <button class="btn primary">Retry</button></form>@endif
